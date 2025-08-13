@@ -1,4 +1,4 @@
-package com.patiet_management_service.analytics_service;
+package com.patient_management_service.analytics_service;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
