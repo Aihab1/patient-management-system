@@ -1,11 +1,13 @@
 package com.patient_management_service.stack;
 
 import software.amazon.awscdk.*;
-import software.amazon.awscdk.services.ec2.InstanceClass;
-import software.amazon.awscdk.services.ec2.InstanceSize;
 import software.amazon.awscdk.services.ec2.InstanceType;
-import software.amazon.awscdk.services.ec2.Vpc;
+import software.amazon.awscdk.services.ec2.*;
+import software.amazon.awscdk.services.msk.CfnCluster;
 import software.amazon.awscdk.services.rds.*;
+import software.amazon.awscdk.services.route53.CfnHealthCheck;
+
+import java.util.stream.Collectors;
 
 public class LocalStack extends Stack {
     private final Vpc vpc;
@@ -17,6 +19,11 @@ public class LocalStack extends Stack {
 
         DatabaseInstance authServiceDb = createDatabase("AuthServiceDb", "auth-service-db");
         DatabaseInstance patientServiceDb = createDatabase("PatientServiceDb", "patient-service-db");
+
+        CfnHealthCheck authDbHealthCheck = createDbHealthCheck(authServiceDb, "AuthServiceDbHealthCheck");
+        CfnHealthCheck patientDbHealthCheck = createDbHealthCheck(patientServiceDb, "PatientServiceDbHealthCheck");
+
+        CfnCluster mskCluster = createMskCluster();
     }
 
     public static void main(final String[] args) {
@@ -54,6 +61,36 @@ public class LocalStack extends Stack {
                 .credentials(Credentials.fromGeneratedSecret("admin"))
                 .databaseName(dbName)
                 .removalPolicy(RemovalPolicy.DESTROY)
+                .build();
+    }
+
+    private CfnHealthCheck createDbHealthCheck(DatabaseInstance db, String id) {
+        return CfnHealthCheck.Builder.create(this, id)
+                .healthCheckConfig(CfnHealthCheck.HealthCheckConfigProperty.builder()
+                        .type("TCP")
+                        .port(Token.asNumber(db.getDbInstanceEndpointPort()))
+                        .ipAddress(db.getDbInstanceEndpointAddress())
+                        .requestInterval(30)
+                        .failureThreshold(3)
+                        .build())
+                .build();
+    }
+
+    private CfnCluster createMskCluster() {
+        return CfnCluster.Builder.create(this, "MskCluster")
+                .clusterName("kafka-cluster")
+                .kafkaVersion("2.8.0")
+                .numberOfBrokerNodes(1)
+                .brokerNodeGroupInfo(
+                        CfnCluster.BrokerNodeGroupInfoProperty
+                                .builder()
+                                .instanceType("kafka.m5.large")
+                                .clientSubnets(vpc.getPrivateSubnets().stream().map(
+                                        ISubnet::getSubnetId
+                                ).collect(Collectors.toList()))
+                                .brokerAzDistribution("DEFAULT")
+                                .build()
+                )
                 .build();
     }
 }
