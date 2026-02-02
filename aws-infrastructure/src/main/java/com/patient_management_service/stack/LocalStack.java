@@ -40,7 +40,8 @@ public class LocalStack extends Stack {
                 "auth-service",
                 List.of(4005),
                 authServiceDb,
-                Map.of("JWT_SECRET", "95f9f5784887db0db4ade25371b953bf1b9b90682f75cc11fb144e88847f151c")); // JWT secret comes from a secure store
+                Map.of("JWT_SECRET", "0JPpYzpT+fcDBN5UfyXCpcqX7NzShCiTLFUCDcXvvfU=")); // JWT
+        // secret comes from a secure store
 
         authService.getNode().addDependency(authDbHealthCheck);
         authService.getNode().addDependency(authServiceDb);
@@ -185,7 +186,8 @@ public class LocalStack extends Stack {
                                 .build()));
 
         Map<String, String> envVars = new HashMap<>();
-        envVars.put("SPRING_KAFKA_BOOTSTRAP_SERVERS", "localhost.localstack.cloud:4510, localhost.localstack.cloud:4511, localhost.localstack.cloud:4512");
+        envVars.put("SPRING_KAFKA_BOOTSTRAP_SERVERS", "localhost.localstack.cloud:4510, localhost.localstack" +
+                ".cloud:4511, localhost.localstack.cloud:4512");
 
         if (additionalEnvVars != null) {
             envVars.putAll(additionalEnvVars);
